@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFS Maze Game</title>
+
+<style>
+body{
+    text-align:center;
+    font-family:Arial,sans-serif;
+}
+
+#maze{
+    display:grid;
+    margin:20px auto;
+    width:max-content;
+}
+
+.cell{
+    width:30px;
+    height:30px;
+    border:1px solid #ddd;
+    box-sizing:border-box;
+}
+
+.wall{
+    background:black;
+}
+
+.start{
+    background:lime;
+}
+
+.end{
+    background:red;
+}
+
+.player{
+    background:dodgerblue;
+}
+
+.visited{
+    background:#87cefa;
+}
+
+.path{
+    background:yellow;
+}
+
+button{
+    padding:10px 20px;
+    margin:5px;
+    cursor:pointer;
+}
+
+#info{
+    font-size:18px;
+    margin:10px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 BFS Maze Game</h1>
+
+<div id="info">
+    Bước đi: <span id="steps">0</span> |
+    Thời gian: <span id="timer">0</span>s
+</div>
+
+<button onclick="generateMaze()">Tạo mê cung mới</button>
+<button onclick="findPath()">BFS Solve</button>
+
+<p>Dùng WASD hoặc phím mũi tên để di chuyển</p>
+
+<div id="maze"></div>
+
+<script>
+
+const n = 15;
+
+let maze = [];
+
+let playerX = 0;
+let playerY = 0;
+
+let steps = 0;
+let startTime;
+
+function generateMaze(){
+
+    maze = [];
+
+    for(let i=0;i<n;i++){
+
+        maze[i]=[];
+
+        for(let j=0;j<n;j++){
+
+            maze[i][j] =
+            Math.random()<0.3 ? 1 : 0;
+
+        }
+    }
+
+    maze[0][0]=0;
+    maze[n-1][n-1]=0;
+
+    startGame();
+}
+
+function startGame(){
+
+    playerX=0;
+    playerY=0;
+
+    steps=0;
+
+    startTime=Date.now();
+
+    document.getElementById("steps").innerText=0;
+
+    drawMaze();
+}
+
+function drawMaze(){
+
+    const board =
+    document.getElementById("maze");
+
+    board.innerHTML="";
+
+    board.style.gridTemplateColumns=
+    `repeat(${n},30px)`;
+
+    for(let i=0;i<n;i++){
+
+        for(let j=0;j<n;j++){
+
+            const cell =
+            document.createElement("div");
+
+            cell.classList.add("cell");
+
+            if(maze[i][j]===1)
+                cell.classList.add("wall");
+
+            if(i===0 && j===0)
+                cell.classList.add("start");
+
+            if(i===n-1 && j===n-1)
+                cell.classList.add("end");
+
+            if(i===playerX && j===playerY)
+                cell.classList.add("player");
+
+            board.appendChild(cell);
+        }
+    }
+}
+
+document.addEventListener("keydown", movePlayer);
+
+function movePlayer(e){
+
+    let dx=0;
+    let dy=0;
+
+    if(e.key==="ArrowUp" || e.key==="w")
+        dx=-1;
+
+    if(e.key==="ArrowDown" || e.key==="s")
+        dx=1;
+
+    if(e.key==="ArrowLeft" || e.key==="a")
+        dy=-1;
+
+    if(e.key==="ArrowRight" || e.key==="d")
+        dy=1;
+
+    let nx=playerX+dx;
+    let ny=playerY+dy;
+
+    if(
+        nx>=0 && nx<n &&
+        ny>=0 && ny<n &&
+        maze[nx][ny]===0
+    ){
+
+        playerX=nx;
+        playerY=ny;
+
+        steps++;
+
+        document.getElementById("steps").innerText=
+        steps;
+
+        drawMaze();
+
+        if(
+            playerX===n-1 &&
+            playerY===n-1
+        ){
+
+            let time =
+            ((Date.now()-startTime)/1000)
+            .toFixed(1);
+
+            alert(
+                "🏆 Bạn thắng!\n\n"+
+                "Số bước: "+steps+
+                "\nThời gian: "+time+" giây"
+            );
+        }
+    }
+}
+
+setInterval(()=>{
+
+    if(startTime){
+
+        document.getElementById("timer")
+        .innerText=
+        ((Date.now()-startTime)/1000)
+        .toFixed(1);
+
+    }
+
+},100);
+
+async function findPath(){
+
+    drawMaze();
+
+    let q=[];
+
+    let visited =
+    Array.from(
+        {length:n},
+        ()=>Array(n).fill(false)
+    );
+
+    let parent =
+    Array.from(
+        {length:n},
+        ()=>Array(n).fill(null)
+    );
+
+    q.push([0,0]);
+
+    visited[0][0]=true;
+
+    let dx=[1,-1,0,0];
+    let dy=[0,0,1,-1];
+
+    const cells =
+    document.querySelectorAll(".cell");
+
+    while(q.length){
+
+        let [x,y]=q.shift();
+
+        if(!(x===0 && y===0)){
+
+            cells[x*n+y]
+            .classList.add("visited");
+
+            await new Promise(
+                r=>setTimeout(r,20)
+            );
+        }
+
+        if(
+            x===n-1 &&
+            y===n-1
+        ) break;
+
+        for(let k=0;k<4;k++){
+
+            let nx=x+dx[k];
+            let ny=y+dy[k];
+
+            if(
+                nx>=0 && nx<n &&
+                ny>=0 && ny<n &&
+                !visited[nx][ny] &&
+                maze[nx][ny]===0
+            ){
+
+                visited[nx][ny]=true;
+
+                parent[nx][ny]=[x,y];
+
+                q.push([nx,ny]);
+
+            }
+        }
+    }
+
+    if(!visited[n-1][n-1]){
+
+        alert(
+            "❌ Không tìm thấy đường đi"
+        );
+
+        return;
+    }
+
+    let path=[];
+
+    let cur=[n-1,n-1];
+
+    while(cur){
+
+        path.push(cur);
+
+        cur=
+        parent[cur[0]][cur[1]];
+    }
+
+    path.reverse();
+
+    for(let [x,y] of path){
+
+        if(
+            !(x===0&&y===0) &&
+            !(x===n-1&&y===n-1)
+        ){
+
+            cells[x*n+y]
+            .classList.remove("visited");
+
+            cells[x*n+y]
+            .classList.add("path");
+
+        }
+
+        await new Promise(
+            r=>setTimeout(r,80)
+        );
+    }
+}
+
+generateMaze();
+
+</script>
+
+</body>
+</html>
